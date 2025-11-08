@@ -10,16 +10,20 @@ class Matrix:
     def __repr__(self) -> str:
         """Возвращает строку, которую можно использовать для воссоздания объекта"""
         return f"Matrix({self.data})"
-    
-    def __eq__(self, value: object) -> bool:
-        pass
 
     def __add__(self, other):
         """Реализует операцию сложения матриц: matrix1 + matrix2"""
 
-        # проверка на разную длину матриц
-        if len(self.data) != len(other.data):
-            raise TypeError(f"матрицы разной длины")
+        if not isinstance(other, Matrix):
+            raise TypeError("операция поддерживается только с Matrix")
+        if len(self.data) == 0 or len(other.data) == 0:
+            raise ValueError("пустые матрицы не поддерживаются")
+        # проверка прямоугольности
+        if any(len(r) != len(self.data[0]) for r in self.data) or any(len(r) != len(other.data[0]) for r in other.data):
+            raise ValueError("матрицы должны быть прямоугольными")
+        # проверка одинаковых размеров
+        if len(self.data) != len(other.data) or len(self.data[0]) != len(other.data[0]):
+            raise ValueError("матрицы разных размеров")
         
         else:
             # создание новой матрицы, где будем хранить новые значения
@@ -36,9 +40,17 @@ class Matrix:
     def __sub__(self, other):
         """Реализует операцию вычитания матриц: matrix1 - matrix2"""
 
-        if len(self.data) != len(other.data):
-            raise TypeError(f"матрицы разной длины")
-        
+        if not isinstance(other, Matrix):
+            raise TypeError("операция поддерживается только с Matrix")
+        if len(self.data) == 0 or len(other.data) == 0:
+            raise ValueError("пустые матрицы не поддерживаются")
+        # проверка прямоугольности
+        if any(len(r) != len(self.data[0]) for r in self.data) or any(len(r) != len(other.data[0]) for r in other.data):
+            raise ValueError("матрицы должны быть прямоугольными")
+        # проверка одинаковых размеров
+        if len(self.data) != len(other.data) or len(self.data[0]) != len(other.data[0]):
+            raise ValueError("матрицы разных размеров")
+
         else:
             # создание новой матрицы, где будем хранить новые значения
             row, cols = len(self.data), len(self.data[0])
@@ -54,10 +66,6 @@ class Matrix:
 
     def __mul__(self, other):
         """Реализует операцию умножения: matrix * number или matrix * matrix"""
-
-        # создание новой матрицы, где будем хранить новые значения
-        row, cols = len(self.data), len(self.data[0])
-        result = [[0 for i in range(cols)] for i in range(row)]
 
         # если число то умножаем не него
         if isinstance(other, (int, float)):
@@ -76,7 +84,14 @@ class Matrix:
         # если матрица то умножаем не нее
         elif isinstance(other, Matrix):
             # матричное умножение: (m x n) * (n x k)
-            
+            # базовые проверки
+            if len(self.data) == 0 or len(other.data) == 0:
+                raise ValueError("пустые матрицы не поддерживаются")
+            if any(len(r) != len(self.data[0]) for r in self.data) or any(len(r) != len(other.data[0]) for r in other.data):
+                raise ValueError("матрицы должны быть прямоугольными")
+            if len(self.data[0]) != len(other.data):
+                raise ValueError("размеры матриц несовместимы для умножения")
+
             # перед циклами: row_self, cols_self, cols_other
             row_self, cols_self, cols_other = len(self.data), len(self.data[0]), len(other.data[0])
             # создание новой матрицы, где будем хранить новые значения
@@ -104,6 +119,28 @@ class Matrix:
         else:
             raise TypeError("сравнение поддерживается только на Matrix")
 
+    
+    def transpose(self):
+        """Возвращает транспонированную матрицу (строки становятся столбцами)"""    
+        result = [list(item) for item in zip(*self.data)]
+        return Matrix(result)
+
+
+    def determinant(self) -> int | float:
+        data = self.data
+        n = len(data)
+        if any(len(row) != n for row in data):
+            raise ValueError("Матрица должна быть квадратной")
+        if n == 1:
+            return data[0][0]
+        if n == 2:
+            return data[0][0]*data[1][1] - data[0][1]*data[1][0]
+        det = 0
+        for col in range(n):
+            minor = [row[:col] + row[col+1:] for row in data[1:]]
+            det += ((-1) ** col) * data[0][col] * Matrix(minor).determinant()
+        return det
+
 try:
     # Тест 1: Создание матрицы
     m1 = Matrix([[1, 2], [3, 4]])
@@ -123,6 +160,15 @@ try:
     m6 = Matrix([[5, 6], [7, 8]])
     m7 = m5 * m6
     assert m7.data == [[19, 22], [43, 50]]
+
+    # Тест 5: Транспонирование
+    m8 = Matrix([[1, 2, 3], [4, 5, 6]])
+    m9 = m8.transpose()
+    assert m9.data == [[1, 4], [2, 5], [3, 6]]
+
+    # Тест 6: Определитель
+    m10 = Matrix([[1, 2], [3, 4]])
+    assert m10.determinant() == -2
 
     # Тест 7: Сравнение матриц
     m11 = Matrix([[1, 2], [3, 4]])
