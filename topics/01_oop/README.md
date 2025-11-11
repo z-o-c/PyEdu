@@ -13,9 +13,6 @@
 
 **Материалы**:
 - **Официальная документация**: https://docs.python.org/3/tutorial/classes.html
-- **Real Python - OOP**: https://realpython.com/python3-object-oriented-programming/
-- **"Python Tricks"** by Dan Bader (главы об ООП)
-- **"Fluent Python"** by Luciano Ramalho (главы 1-6)
 
 ---
 
