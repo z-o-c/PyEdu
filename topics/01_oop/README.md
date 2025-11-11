@@ -186,48 +186,285 @@ assert result.data == [[5, 5], [5, 5]]
 
 ## Задача 1.2: Иерархия классов для анализа текста
 
-**Описание**: Создать иерархию классов для анализа текста с использованием наследования и полиморфизма.
+**Описание**: Создать иерархию классов для анализа текста с использованием наследования и полиморфизма. Базовый класс определяет общий интерфейс, а дочерние классы реализуют специфичные алгоритмы анализа.
 
 **Технические требования**:
-- Базовый класс `TextAnalyzer` с методом `analyze(text: str) -> dict`
-- Класс `WordFrequencyAnalyzer(TextAnalyzer)` - подсчет частоты слов
+- Базовый класс `TextAnalyzer` с абстрактным методом `analyze(text: str) -> dict`
+- Класс `WordFrequencyAnalyzer(TextAnalyzer)` - подсчет частоты слов (регистронезависимо)
 - Класс `CharacterFrequencyAnalyzer(TextAnalyzer)` - подсчет частоты символов
 - Класс `SentenceAnalyzer(TextAnalyzer)` - анализ предложений (количество, средняя длина)
 - Все классы должны иметь метод `analyze()` с разной реализацией (полиморфизм)
+- Использовать наследование для переиспользования кода
+- Применить нормализацию текста (приведение к нижнему регистру, удаление знаков препинания где необходимо)
+
+**Подробные инструкции по реализации классов**:
+
+### Базовый класс `TextAnalyzer`
+
+#### `__init__(self)`
+- Конструктор базового класса (может быть пустым или содержать общие атрибуты)
+- Пример: `analyzer = TextAnalyzer()`
+
+#### `analyze(self, text: str) -> dict`
+- **Абстрактный метод** - должен быть определен в базовом классе, но выбрасывать `NotImplementedError`
+- Или можно использовать `abc.ABC` и `@abstractmethod` для создания абстрактного класса
+- Метод принимает строку текста и возвращает словарь с результатами анализа
+- Формат возвращаемого значения зависит от конкретной реализации дочернего класса
+- Пример реализации в базовом классе:
+  ```python
+  def analyze(self, text: str) -> dict:
+      raise NotImplementedError("Subclasses must implement analyze method")
+  ```
+
+### Класс `WordFrequencyAnalyzer(TextAnalyzer)`
+
+#### `analyze(self, text: str) -> dict`
+- **Логика**: Подсчитывает частоту встречаемости каждого слова в тексте
+- **Обработка текста**:
+  1. Привести весь текст к нижнему регистру (`.lower()`)
+  2. Разделить текст на слова по пробелам и знакам препинания
+  3. Удалить пустые строки из списка слов
+  4. Можно использовать `re.findall(r'\b\w+\b', text.lower())` для извлечения слов
+- **Возвращаемое значение**: словарь `dict[str, int]`, где ключ - слово (в нижнем регистре), значение - количество вхождений
+- **Пример**:
+  - Вход: `"Python is great. Python is powerful."`
+  - Выход: `{'python': 2, 'is': 2, 'great': 1, 'powerful': 1}`
+- **Особенности**:
+  - Регистронезависимый подсчет (Python = python = PYTHON)
+  - Игнорирует знаки препинания при подсчете слов
+  - Слова разделяются пробелами и знаками препинания
+
+#### Дополнительные методы (опционально):
+- `_normalize_text(self, text: str) -> str` - нормализация текста (приведение к нижнему регистру)
+- `_extract_words(self, text: str) -> list[str]` - извлечение списка слов из текста
+
+### Класс `CharacterFrequencyAnalyzer(TextAnalyzer)`
+
+#### `analyze(self, text: str) -> dict`
+- **Логика**: Подсчитывает частоту встречаемости каждого символа в тексте
+- **Обработка текста**:
+  1. Учитывать все символы, включая пробелы, знаки препинания, цифры
+  2. Можно привести к нижнему регистру (опционально, но рекомендуется для согласованности)
+  3. Итерация по каждому символу в строке
+- **Возвращаемое значение**: словарь `dict[str, int]`, где ключ - символ, значение - количество вхождений
+- **Пример**:
+  - Вход: `"Hello, world!"`
+  - Выход: `{'h': 1, 'e': 1, 'l': 3, 'o': 2, ',': 1, ' ': 1, 'w': 1, 'r': 1, 'd': 1, '!': 1}`
+- **Особенности**:
+  - Учитывает все символы, включая пробелы и знаки препинания
+  - Регистронезависимый подсчет (рекомендуется)
+  - Можно использовать `collections.Counter` для упрощения
+
+#### Дополнительные методы (опционально):
+- `_normalize_character(self, char: str) -> str` - нормализация символа
+
+### Класс `SentenceAnalyzer(TextAnalyzer)`
+
+#### `analyze(self, text: str) -> dict`
+- **Логика**: Анализирует предложения в тексте (количество и среднюю длину)
+- **Обработка текста**:
+  1. Разделить текст на предложения по знакам окончания (`.`, `!`, `?`)
+  2. Удалить пустые предложения
+  3. Для каждого предложения посчитать количество символов (или слов)
+  4. Вычислить среднюю длину предложения
+- **Возвращаемое значение**: словарь с ключами:
+  - `'sentence_count'` (int) - количество предложений
+  - `'avg_sentence_length'` (float) - средняя длина предложения в символах
+  - Опционально: `'avg_words_per_sentence'` (float) - среднее количество слов в предложении
+- **Пример**:
+  - Вход: `"Python is great. Python is powerful. Python is easy."`
+  - Выход: `{'sentence_count': 3, 'avg_sentence_length': 16.67}` (примерно)
+- **Особенности**:
+  - Предложения разделяются по `.`, `!`, `?`
+  - Учитывать, что точка может быть частью числа или сокращения (упрощенная версия)
+  - Длина предложения = количество символов в предложении (включая пробелы)
+  - Если предложений нет, вернуть `{'sentence_count': 0, 'avg_sentence_length': 0.0}`
+
+#### Дополнительные методы (опционально):
+- `_split_sentences(self, text: str) -> list[str]` - разделение текста на предложения
+- `_calculate_avg_length(self, sentences: list[str]) -> float` - вычисление средней длины
+
+**Примеры использования**:
+
+```python
+# Пример 1: Анализ частоты слов
+text = "Python is great. Python is powerful. Python is easy."
+analyzer1 = WordFrequencyAnalyzer()
+result1 = analyzer1.analyze(text)
+# result1 = {'python': 3, 'is': 3, 'great': 1, 'powerful': 1, 'easy': 1}
+
+# Пример 2: Анализ частоты символов
+analyzer2 = CharacterFrequencyAnalyzer()
+result2 = analyzer2.analyze("Hello, world!")
+# result2 = {'h': 1, 'e': 1, 'l': 3, 'o': 2, ',': 1, ' ': 1, 'w': 1, 'r': 1, 'd': 1, '!': 1}
+
+# Пример 3: Анализ предложений
+analyzer3 = SentenceAnalyzer()
+result3 = analyzer3.analyze("First sentence. Second sentence! Third sentence?")
+# result3 = {'sentence_count': 3, 'avg_sentence_length': 17.0}
+
+# Пример 4: Полиморфизм - работа через базовый класс
+analyzers: list[TextAnalyzer] = [
+    WordFrequencyAnalyzer(),
+    CharacterFrequencyAnalyzer(),
+    SentenceAnalyzer()
+]
+text = "Python is great. Python is powerful."
+for analyzer in analyzers:
+    result = analyzer.analyze(text)
+    print(f"{analyzer.__class__.__name__}: {result}")
+```
 
 **Тест-кейсы**:
 ```python
-# Тест 1: Анализ частоты слов
+# Тест 1: Создание базового класса
+try:
+    analyzer = TextAnalyzer()
+    analyzer.analyze("test")
+    assert False, "Should raise NotImplementedError"
+except NotImplementedError:
+    pass  # Ожидаемое поведение
+
+# Тест 2: Анализ частоты слов - базовый случай
 text = "Python is great. Python is powerful. Python is easy."
 analyzer1 = WordFrequencyAnalyzer()
 result1 = analyzer1.analyze(text)
 assert result1['python'] == 3
 assert result1['is'] == 3
 assert result1['great'] == 1
+assert result1['powerful'] == 1
+assert result1['easy'] == 1
 
-# Тест 2: Анализ частоты символов
+# Тест 3: Анализ частоты слов - регистронезависимость
+text2 = "Python PYTHON python"
+result2 = analyzer1.analyze(text2)
+assert result2['python'] == 3
+
+# Тест 4: Анализ частоты слов - знаки препинания
+text3 = "Hello, world! Hello; world."
+result3 = analyzer1.analyze(text3)
+assert result3['hello'] == 2
+assert result3['world'] == 2
+
+# Тест 5: Анализ частоты слов - пустой текст
+result4 = analyzer1.analyze("")
+assert result4 == {}
+
+# Тест 6: Анализ частоты символов - базовый случай
 analyzer2 = CharacterFrequencyAnalyzer()
-result2 = analyzer2.analyze(text)
-assert result2['p'] > 0
-assert result2[' '] > 0  # пробелы
+text4 = "Hello, world!"
+result5 = analyzer2.analyze(text4)
+assert result5['h'] > 0
+assert result5['e'] > 0
+assert result5['l'] == 3
+assert result5['o'] == 2
+assert result5[','] == 1
+assert result5[' '] == 1
+assert result5['!'] == 1
 
-# Тест 3: Анализ предложений
+# Тест 7: Анализ частоты символов - регистронезависимость
+text5 = "Aa"
+result6 = analyzer2.analyze(text5)
+assert result6['a'] == 2
+
+# Тест 8: Анализ частоты символов - все символы
+text6 = "a b c 1 2 3 ! @ #"
+result7 = analyzer2.analyze(text6)
+assert 'a' in result7
+assert '1' in result7
+assert '!' in result7
+assert ' ' in result7
+
+# Тест 9: Анализ предложений - базовый случай
 analyzer3 = SentenceAnalyzer()
-result3 = analyzer3.analyze(text)
-assert result3['sentence_count'] == 3
-assert result3['avg_sentence_length'] > 0
+text7 = "Python is great. Python is powerful. Python is easy."
+result8 = analyzer3.analyze(text7)
+assert result8['sentence_count'] == 3
+assert result8['avg_sentence_length'] > 0
+assert isinstance(result8['avg_sentence_length'], float)
 
-# Тест 4: Полиморфизм - работа через базовый класс
+# Тест 10: Анализ предложений - разные знаки окончания
+text8 = "First sentence. Second sentence! Third sentence?"
+result9 = analyzer3.analyze(text8)
+assert result9['sentence_count'] == 3
+
+# Тест 11: Анализ предложений - пустой текст
+result10 = analyzer3.analyze("")
+assert result10['sentence_count'] == 0
+assert result10['avg_sentence_length'] == 0.0
+
+# Тест 12: Анализ предложений - текст без предложений
+result11 = analyzer3.analyze("No sentence here")
+# Может быть 0 или 1 в зависимости от реализации (текст без точки)
+assert 'sentence_count' in result11
+assert 'avg_sentence_length' in result11
+
+# Тест 13: Полиморфизм - работа через базовый класс
 analyzers = [WordFrequencyAnalyzer(), CharacterFrequencyAnalyzer(), SentenceAnalyzer()]
-results = [a.analyze(text) for a in analyzers]
+text9 = "Python is great. Python is powerful."
+results = [a.analyze(text9) for a in analyzers]
 assert len(results) == 3
 assert all(isinstance(r, dict) for r in results)
+
+# Тест 14: Полиморфизм - проверка типов результатов
+word_result = results[0]
+char_result = results[1]
+sentence_result = results[2]
+assert 'python' in word_result  # Словарь частоты слов
+assert 'p' in char_result  # Словарь частоты символов
+assert 'sentence_count' in sentence_result  # Словарь с метриками предложений
+
+# Тест 15: Наследование - проверка isinstance
+analyzer = WordFrequencyAnalyzer()
+assert isinstance(analyzer, TextAnalyzer)
+assert isinstance(analyzer, WordFrequencyAnalyzer)
+
+# Тест 16: Комплексный тест - все анализаторы на одном тексте
+text10 = "The quick brown fox. The quick brown fox jumps. The quick brown fox jumps over the lazy dog."
+word_analyzer = WordFrequencyAnalyzer()
+char_analyzer = CharacterFrequencyAnalyzer()
+sentence_analyzer = SentenceAnalyzer()
+
+word_result = word_analyzer.analyze(text10)
+char_result = char_analyzer.analyze(text10)
+sentence_result = sentence_analyzer.analyze(text10)
+
+assert word_result['the'] == 3
+assert word_result['quick'] == 3
+assert 't' in char_result
+assert sentence_result['sentence_count'] == 3
+assert sentence_result['avg_sentence_length'] > 0
+
+# Тест 17: Граничный случай - одно слово
+text11 = "Python"
+result12 = analyzer1.analyze(text11)
+assert result12['python'] == 1
+assert len(result12) == 1
+
+# Тест 18: Граничный случай - одно предложение
+text12 = "One sentence."
+result13 = analyzer3.analyze(text12)
+assert result13['sentence_count'] == 1
+assert result13['avg_sentence_length'] > 0
+
+# Тест 19: Граничный случай - только знаки препинания
+text13 = "!!! ??? ..."
+result14 = analyzer1.analyze(text13)
+# Результат зависит от реализации (может быть пустым словарем)
+assert isinstance(result14, dict)
+
+# Тест 20: Проверка, что результаты не изменяют исходный текст
+text14 = "Original text"
+analyzer1.analyze(text14)
+assert text14 == "Original text"  # Исходный текст не должен измениться
 ```
 
 **Выходной результат**:
-- Файл `text_analyzers.py` с классами
-- Все тест-кейсы должны проходить
-- Демонстрация полиморфизма в отдельном файле `demo.py`
+- Файл `text_analyzers.py` с классами `TextAnalyzer`, `WordFrequencyAnalyzer`, `CharacterFrequencyAnalyzer`, `SentenceAnalyzer`
+- Все тест-кейсы должны проходить успешно
+- Код должен содержать docstrings для всех классов и методов
+- Демонстрация полиморфизма в отдельном файле `demo.py` (опционально)
+- Использовать аннотации типов (type hints) для всех методов
 
 ---
 
